@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pegazus — Bouclier anti-arnaque</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:#131c31; --card2:#1a2742; --line:#263556;
+    --txt:#eaf0fb; --muted:#9fb0d0; --brand:#38bdf8; --brand2:#0ea5e9;
+    --green:#22c55e; --greenbg:#0f2a1c; --orange:#f59e0b; --orangebg:#2a1f0a;
+    --red:#ef4444; --redbg:#2a0f12; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.5;padding-bottom:84px}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#0b1220,#0e1a33);
+    border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));
+    display:grid;place-items:center;font-size:20px;box-shadow:var(--shadow)}
+  .brand h1{font-size:18px;margin:0;letter-spacing:.3px}
+  .brand p{font-size:11px;margin:0;color:var(--muted)}
+  .wrap{max-width:560px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  h2{font-size:17px;margin:0 0 10px}
+  h3{font-size:14px;margin:14px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input,select,textarea{width:100%;padding:13px;border-radius:11px;border:1px solid var(--line);
+    background:var(--card2);color:var(--txt);font-size:15px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+  textarea{min-height:80px;resize:vertical}
+  button{cursor:pointer;border:none;font-family:inherit}
+  .btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));
+    color:#05223a;font-weight:700;font-size:16px;margin-top:12px}
+  .btn:active{transform:scale(.99)}
+  .btn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+  .btn.danger{background:linear-gradient(135deg,#f97316,var(--red));color:#fff}
+  .btn.small{width:auto;padding:9px 13px;font-size:13px;margin:0}
+  .muted{color:var(--muted);font-size:13px}
+  .row{display:flex;gap:8px;align-items:center}
+  .idrow{display:flex;gap:6px;margin-bottom:8px}
+  .idrow select{flex:0 0 40%}
+  .idrow .rm{flex:0 0 42px;background:var(--redbg);color:var(--red);border:1px solid var(--line);border-radius:11px;font-size:18px}
+  /* Résultat de vérification */
+  .verdict{border-radius:14px;padding:16px;margin-top:14px;text-align:center;border:1px solid var(--line)}
+  .verdict .big{font-size:34px;font-weight:800;margin:4px 0}
+  .verdict.safe{background:var(--greenbg);border-color:#1f5134}
+  .verdict.safe .big{color:var(--green)}
+  .verdict.warn{background:var(--orangebg);border-color:#5c4410}
+  .verdict.warn .big{color:var(--orange)}
+  .verdict.bad{background:var(--redbg);border-color:#5c1a1f}
+  .verdict.bad .big{color:var(--red)}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;
+    background:var(--card2);border:1px solid var(--line);margin:3px 3px 0 0}
+  .pill.red{background:var(--redbg);color:#fca5a5;border-color:#5c1a1f}
+  /* Navbar bas */
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#0c1526;border-top:1px solid var(--line);
+    display:flex;max-width:560px;margin:0 auto}
+  nav button{flex:1;background:none;color:var(--muted);padding:9px 2px 10px;font-size:11px;
+    display:flex;flex-direction:column;align-items:center;gap:3px}
+  nav button .ic{font-size:21px}
+  nav button.on{color:var(--brand)}
+  .tab{display:none} .tab.on{display:block}
+  .banner{border-radius:12px;padding:11px 13px;margin-bottom:12px;font-size:13px;display:flex;gap:8px;align-items:flex-start}
+  .banner.info{background:#0e2438;border:1px solid #1d4e74;color:#bfe4ff}
+  .banner.cfg{background:var(--orangebg);border:1px solid #5c4410;color:#fcd9a0}
+  .banner.live{background:var(--redbg);border:1px solid #5c1a1f;color:#fecaca;animation:flash 1s ease 3}
+  @keyframes flash{50%{background:#45141a}}
+  .stat{display:flex;gap:10px;text-align:center}
+  .stat>div{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 6px}
+  .stat b{display:block;font-size:22px;color:var(--brand)}
+  .stat span{font-size:11px;color:var(--muted)}
+  .list-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px;background:var(--card2)}
+  .list-item .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .badge.red{background:var(--redbg);color:#fca5a5} .badge.orange{background:var(--orangebg);color:#fcd9a0}
+  .quiz-q{border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:8px;background:var(--card2)}
+  .quiz-q .opts{display:flex;gap:8px;margin-top:8px}
+  .quiz-q .opts button{flex:1;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:14px}
+  .quiz-q .opts button.selY{background:var(--redbg);border-color:var(--red);color:#fca5a5}
+  .quiz-q .opts button.selN{background:var(--greenbg);border-color:var(--green);color:#86efac}
+  .acc{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--card2)}
+  .acc>summary{padding:12px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+  .acc>summary::-webkit-details-marker{display:none}
+  .acc[open]>summary{border-bottom:1px solid var(--line)}
+  .acc .body{padding:12px;font-size:14px;color:#dbe6fb}
+  .link{color:var(--brand);text-decoration:none;font-weight:600}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:50;
+    background:#09101e;border:1px solid var(--line);padding:11px 16px;border-radius:12px;font-size:14px;
+    box-shadow:var(--shadow);opacity:0;transition:.3s;pointer-events:none;max-width:90%;text-align:center}
+  .toast.show{opacity:1}
+  .small-note{font-size:11px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛡️</div>
+  <div class="brand">
+    <h1>PEGAZUS</h1>
+    <p>Bouclier anti-arnaque · Côte d'Ivoire</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Bandeau config (si Supabase non configuré) -->
+  <div id="cfgBanner" class="banner cfg" style="display:none">
+    ⚙️ <div><b>Configuration requise.</b> Renseigne <code>SUPABASE_URL</code> et <code>SUPABASE_ANON_KEY</code> en haut du script pour activer la base de données.</div>
+  </div>
+
+  <!-- Bandeau alerte temps réel -->
+  <div id="liveBanner" class="banner live" style="display:none"></div>
+
+  <!-- ===================== ONGLET VÉRIFIER ===================== -->
+  <section id="tab-verifier" class="tab on">
+    <div class="card">
+      <h2>🔍 Vérifier avant de payer</h2>
+      <p class="muted">Entre un numéro Mobile Money ou un compte réseau social. En 1 seconde, tu sais s'il est signalé comme arnaqueur.</p>
+      <label>Numéro ou pseudo à vérifier</label>
+      <input id="vInput" placeholder="Ex : 0700000000  ou  @jolie_business" autocomplete="off">
+      <button class="btn" onclick="verifier()">Vérifier maintenant</button>
+      <div id="vResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="stat">
+        <div><b id="statReports">—</b><span>Signalements</span></div>
+        <div><b id="statIds">—</b><span>Comptes fichés</span></div>
+        <div><b id="statWeek">—</b><span>Cette semaine</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ONGLET SIGNALER ===================== -->
+  <section id="tab-signaler" class="tab">
+    <div class="card">
+      <h2>🚩 Signaler un arnaqueur</h2>
+
+      <div id="authBox">
+        <div class="banner info">ℹ️ <div>Pour éviter les faux signalements, un compte est requis. On t'envoie juste un lien de connexion par e-mail (aucun mot de passe).</div></div>
+        <label>Ton e-mail</label>
+        <input id="authEmail" type="email" placeholder="toi@exemple.com" autocomplete="email">
+        <button class="btn" onclick="envoyerLien()">Recevoir mon lien de connexion</button>
+        <p id="authMsg" class="small-note"></p>
+      </div>
+
+      <div id="reportForm" style="display:none">
+        <p class="muted">Connecté : <b id="userEmail"></b> · <a class="link" href="#" onclick="deconnexion();return false;">Déconnexion</a></p>
+
+        <label>Type d'arnaque</label>
+        <select id="rType">
+          <option value="faux_marchand">Faux vendeur / commande non livrée</option>
+          <option value="faux_wave">Faux agent Wave / Orange Money</option>
+          <option value="otp">Vol de code OTP / compte piraté</option>
+          <option value="faux_recrutement">Faux recrutement / emploi</option>
+          <option value="investissement">Faux investissement / gain rapide</option>
+          <option value="sextorsion">Sextorsion / chantage</option>
+          <option value="faux_colis">Faux colis bloqué / douane</option>
+          <option value="faux_marabout">Faux marabout / voyance</option>
+          <option value="phishing">Lien piégé / phishing</option>
+          <option value="autre">Autre</option>
+        </select>
+
+        <h3>Identifiants de l'arnaqueur</h3>
+        <p class="small-note">Ajoute tout ce que tu connais : numéro Wave, compte TikTok, etc. (au moins 1)</p>
+        <div id="idRows"></div>
+        <button class="btn sec small" style="margin-top:4px" onclick="ajouterIdRow()">+ Ajouter un identifiant</button>
+
+        <label style="margin-top:14px">Montant perdu (FCFA) — facultatif</label>
+        <input id="rAmount" type="number" inputmode="numeric" placeholder="Ex : 25000">
+
+        <label>Ville — facultatif</label>
+        <input id="rCity" placeholder="Ex : Abidjan, Bouaké...">
+
+        <label>Décris brièvement ce qui s'est passé</label>
+        <textarea id="rDesc" placeholder="Ex : s'est fait passer pour un agent Wave, a demandé mon code..."></textarea>
+
+        <button class="btn danger" onclick="soumettreSignalement()">Publier le signalement</button>
+        <p id="reportMsg" class="small-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ONGLET LISTE NOIRE ===================== -->
+  <section id="tab-liste" class="tab">
+    <div class="card">
+      <h2>📋 Liste noire communautaire</h2>
+      <p class="muted">Les comptes les plus signalés. Mise à jour en temps réel 🔴</p>
+      <input id="searchList" placeholder="Filtrer par numéro, pseudo..." oninput="renduListe()">
+      <div id="listeContent" style="margin-top:12px"><p class="muted">Chargement...</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== ONGLET APPRENDRE ===================== -->
+  <section id="tab-apprendre" class="tab">
+    <div class="card">
+      <h2>🎓 Détecteur d'arnaque</h2>
+      <p class="muted">Réponds honnêtement. L'app calcule le niveau de risque.</p>
+      <div id="quizBox"></div>
+      <button class="btn" onclick="calculerRisque()">Voir mon niveau de risque</button>
+      <div id="quizResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📚 Les arnaques courantes en Côte d'Ivoire</h2>
+      <div id="catalogue"></div>
+    </div>
+
+    <div class="card">
+      <h2>🆘 Où porter plainte officiellement</h2>
+      <p class="muted">Seules la PLCC (police) et l'opérateur peuvent bloquer un compte frauduleux. Voici les vrais canaux :</p>
+      <div class="list-item">
+        <b>PLCC — Plateforme de Lutte Contre la Cybercriminalité</b>
+        <p class="muted" style="margin:6px 0 0">📞 +225 27 22 48 97 77 &nbsp;·&nbsp; Numéro vert : <b>100</b></p>
+        <p class="muted" style="margin:4px 0 0">✉️ cybercrime@interieur.gouv.ci</p>
+      </div>
+      <p class="small-note">⚠️ Attention : de faux agents PLCC existent. Ne communique jamais ton code secret, même à « la police ».</p>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav>
+  <button class="on" data-tab="verifier" onclick="go('verifier')"><span class="ic">🔍</span>Vérifier</button>
+  <button data-tab="signaler" onclick="go('signaler')"><span class="ic">🚩</span>Signaler</button>
+  <button data-tab="liste" onclick="go('liste')"><span class="ic">📋</span>Liste noire</button>
+  <button data-tab="apprendre" onclick="go('apprendre')"><span class="ic">🎓</span>Apprendre</button>
+</nav>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   PEGAZUS — CONFIGURATION
+   Remplace les 2 valeurs ci-dessous par celles de ton projet Supabase
+   (Settings > API > Project URL et anon public key)
+   ============================================================ */
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';
+const SUPABASE_ANON_KEY = '  sb_publishable_YnVqqErVvdvfmQCoy-syGA_VipzDH5o ';
+
+/* ---------- Init ---------- */
+let sb = null;
+const configured = !SUPABASE_URL.includes('VOTRE-PROJET') && !SUPABASE_ANON_KEY.includes('VOTRE_CLE');
+if (configured) {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  document.getElementById('cfgBanner').style.display = 'flex';
+}
+
+/* ---------- Libellés des types d'identifiants ---------- */
+const ID_TYPES = {
+  wave:         {label:'Wave',         icon:'🌊', kind:'num'},
+  orange_money: {label:'Orange Money', icon:'🟠', kind:'num'},
+  mtn:          {label:'MTN MoMo',     icon:'🟡', kind:'num'},
+  moov:         {label:'Moov Money',   icon:'🔵', kind:'num'},
+  whatsapp:     {label:'WhatsApp',     icon:'💬', kind:'num'},
+  tiktok:       {label:'TikTok',       icon:'🎵', kind:'user'},
+  facebook:     {label:'Facebook',     icon:'📘', kind:'user'},
+  instagram:    {label:'Instagram',    icon:'📸', kind:'user'},
+  snapchat:     {label:'Snapchat',     icon:'👻', kind:'user'},
+  youtube:      {label:'YouTube',      icon:'▶️', kind:'user'}
+};
+const SCAM_LABELS = {
+  faux_marchand:'Faux vendeur', faux_wave:'Faux agent Wave/OM', otp:'Vol de code OTP',
+  faux_recrutement:'Faux recrutement', investissement:'Faux investissement',
+  sextorsion:'Sextorsion', faux_colis:'Faux colis', faux_marabout:'Faux marabout',
+  phishing:'Phishing', autre:'Autre'
+};
+
+/* ---------- Liens de signalement officiel par plateforme ---------- */
+const REPORT_LINKS = {
+  tiktok:'https://support.tiktok.com/fr/safety-hc/report-a-problem',
+  facebook:'https://www.facebook.com/help/',
+  instagram:'https://help.instagram.com/',
+  snapchat:'https://support.snapchat.com/',
+  youtube:'https://support.google.com/youtube/answer/2802027'
+};
+
+/* ---------- Normalisation ---------- */
+function normalize(type, value){
+  value = (value||'').trim();
+  const kind = ID_TYPES[type] ? ID_TYPES[type].kind : (/^[0-9+\s]+$/.test(value) ? 'num' : 'user');
+  if (kind === 'num') return value.replace(/\D/g,'').replace(/^225/,''); // chiffres seuls, sans indicatif
+  return value.toLowerCase().replace(/^@/,'').replace(/\s+/g,'');
+}
+function guessType(value){
+  return /^[0-9+\s]+$/.test((value||'').trim()) ? 'num' : 'user';
+}
+
+/* ---------- Navigation ---------- */
+function go(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab-'+tab).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  window.scrollTo(0,0);
+  if (tab==='liste') chargerListe();
+}
+
+/* ---------- Toast ---------- */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ============================================================
+   VÉRIFIER
+   ============================================================ */
+async function verifier(){
+  const raw = document.getElementById('vInput').value.trim();
+  const box = document.getElementById('vResult');
+  if (!raw){ toast('Entre un numéro ou un pseudo'); return; }
+  if (!sb){ box.innerHTML = cfgHint(); return; }
+  box.innerHTML = '<p class="muted" style="margin-top:12px">Recherche en cours...</p>';
+
+  const value = normalize(guessType(raw)==='num'?'wave':'tiktok', raw);
+  // On cherche par valeur normalisée, tous types confondus
+  const {data, error} = await sb.from('report_identifiers')
+    .select('report_id,id_type,id_value,id_label, reports(scam_type,created_at,city,amount_fcfa,description)')
+    .eq('id_value', value);
+
+  if (error){ box.innerHTML = '<p class="muted">Erreur : '+error.message+'</p>'; return; }
+
+  const reports = {};
+  const aliases = {};
+  (data||[]).forEach(r=>{
+    reports[r.report_id] = r.reports;
+  });
+  const reportIds = Object.keys(reports);
+  const count = reportIds.length;
+
+  // Récupérer les autres identifiants liés à ces signalements (alias)
+  if (reportIds.length){
+    const {data:al} = await sb.from('report_identifiers')
+      .select('id_type,id_label').in('report_id', reportIds);
+    (al||[]).forEach(a=>{ aliases[a.id_type+'|'+a.id_label]={type:a.id_type,label:a.id_label}; });
+  }
+
+  let cls, titre, emoji;
+  if (count===0){ cls='safe'; emoji='✅'; titre='Aucun signalement'; }
+  else if (count<3){ cls='warn'; emoji='⚠️'; titre='Prudence'; }
+  else { cls='bad'; emoji='🔴'; titre='Arnaqueur signalé'; }
+
+  let html = `<div class="verdict ${cls}">
+    <div style="font-size:40px">${emoji}</div>
+    <div class="big">${count}</div>
+    <div>signalement${count>1?'s':''}</div>
+    <h2 style="margin:8px 0 0">${titre}</h2>`;
+
+  if (count===0){
+    html += `<p class="muted" style="margin-top:8px">Ce compte n'est pas encore fiché. Reste prudent : l'absence de signalement ne garantit pas que c'est sûr.</p></div>`;
+  } else {
+    // Types d'arnaques
+    const types = [...new Set(reportIds.map(id=>reports[id]?.scam_type).filter(Boolean))];
+    html += `<div style="margin-top:10px">`;
+    types.forEach(t=> html+=`<span class="pill red">${SCAM_LABELS[t]||t}</span>`);
+    html += `</div>`;
+    // Alias
+    const alArr = Object.values(aliases);
+    if (alArr.length){
+      html += `<p class="muted" style="margin-top:12px;font-size:12px">Aussi connu sous :</p><div>`;
+      alArr.forEach(a=> html+=`<span class="pill">${ID_TYPES[a.type]?.icon||''} ${a.label}</span>`);
+      html += `</div>`;
+    }
+    html += `</div>`;
+    // Partage de l'alerte
+    html += `<button class="btn danger" onclick="partagerAlerte('${raw.replace(/'/g,"")}',${count})">📢 Partager cette alerte (WhatsApp)</button>`;
+    // Signalement officiel plateforme
+    const g = guessType(raw);
+    if (g==='user'){
+      html += `<p class="muted" style="margin-top:12px;font-size:12px">Signaler ce compte à la plateforme :</p>
+        <div class="row" style="flex-wrap:wrap;gap:6px">
+        <a class="btn sec small" target="_blank" href="${REPORT_LINKS.tiktok}">TikTok</a>
+        <a class="btn sec small" target="_blank" href="${REPORT_LINKS.facebook}">Facebook</a>
+        <a class="btn sec small" target="_blank" href="${REPORT_LINKS.instagram}">Instagram</a>
+        <a class="btn sec small" target="_blank" href="${REPORT_LINKS.snapchat}">Snapchat</a>
+        <a class="btn sec small" target="_blank" href="${REPORT_LINKS.youtube}">YouTube</a></div>`;
+    }
+  }
+  box.innerHTML = html;
+}
+
+function partagerAlerte(id, count){
+  const txt = `🔴 ALERTE PEGAZUS 🔴\n"${id}" est signalé ${count} fois comme ARNAQUEUR.\nVérifie avant de payer sur Pegazus. Protège tes proches !`;
+  if (navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
+  else {
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  }
+}
+function cfgHint(){ return '<p class="muted" style="margin-top:12px">⚙️ Base de données non configurée (voir le bandeau en haut).</p>'; }
+
+/* ============================================================
+   STATISTIQUES + LISTE NOIRE
+   ============================================================ */
+let LISTE_CACHE = [];
+async function chargerStats(){
+  if (!sb) return;
+  const {count:rc} = await sb.from('reports').select('*',{count:'exact',head:true});
+  const {count:ic} = await sb.from('report_identifiers').select('*',{count:'exact',head:true});
+  const weekAgo = new Date(Date.now()-7*864e5).toISOString();
+  const {count:wc} = await sb.from('reports').select('*',{count:'exact',head:true}).gte('created_at',weekAgo);
+  document.getElementById('statReports').textContent = rc??0;
+  document.getElementById('statIds').textContent = ic??0;
+  document.getElementById('statWeek').textContent = wc??0;
+}
+
+async function chargerListe(){
+  if (!sb){ document.getElementById('listeContent').innerHTML = cfgHint(); return; }
+  const {data, error} = await sb.from('report_identifiers')
+    .select('id_type,id_value,id_label, reports(scam_type)')
+    .limit(1000);
+  if (error){ document.getElementById('listeContent').innerHTML='<p class="muted">Erreur : '+error.message+'</p>'; return; }
+  // Agréger par identifiant
+  const agg = {};
+  (data||[]).forEach(r=>{
+    const key = r.id_type+'|'+r.id_value;
+    if (!agg[key]) agg[key]={type:r.id_type,label:r.id_label,value:r.id_value,count:0,types:new Set()};
+    agg[key].count++;
+    if (r.reports?.scam_type) agg[key].types.add(r.reports.scam_type);
+  });
+  LISTE_CACHE = Object.values(agg).sort((a,b)=>b.count-a.count);
+  renduListe();
+}
+
+function renduListe(){
+  const q = (document.getElementById('searchList').value||'').toLowerCase().replace(/^@/,'');
+  const el = document.getElementById('listeContent');
+  const items = LISTE_CACHE.filter(x=> !q || x.value.includes(q) || x.label.toLowerCase().includes(q));
+  if (!items.length){ el.innerHTML='<p class="muted">Aucun compte fiché pour le moment.</p>'; return; }
+  el.innerHTML = items.slice(0,100).map(x=>{
+    const badge = x.count>=3?'red':'orange';
+    const types=[...x.types].map(t=>SCAM_LABELS[t]||t).join(', ');
+    return `<div class="list-item"><div class="top">
+      <b>${ID_TYPES[x.type]?.icon||''} ${x.label}</b>
+      <span class="badge ${badge}">${x.count} signalement${x.count>1?'s':''}</span></div>
+      <p class="muted" style="margin:6px 0 0;font-size:12px">${ID_TYPES[x.type]?.label||x.type}${types?' · '+types:''}</p></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   AUTHENTIFICATION (lien magique)
+   ============================================================ */
+async function envoyerLien(){
+  if (!sb){ toast('Base non configurée'); return; }
+  const email = document.getElementById('authEmail').value.trim();
+  const msg = document.getElementById('authMsg');
+  if (!email || !email.includes('@')){ toast('E-mail invalide'); return; }
+  msg.textContent = 'Envoi en cours...';
+  const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo:window.location.href}});
+  msg.textContent = error ? ('Erreur : '+error.message) : '✅ Lien envoyé ! Vérifie ta boîte mail puis reviens sur cette page.';
+}
+async function deconnexion(){ await sb.auth.signOut(); refreshAuth(); }
+async function refreshAuth(){
+  if (!sb) return;
+  const {data} = await sb.auth.getUser();
+  const user = data?.user;
+  document.getElementById('authBox').style.display = user ? 'none':'block';
+  document.getElementById('reportForm').style.display = user ? 'block':'none';
+  if (user) document.getElementById('userEmail').textContent = user.email;
+}
+
+/* ============================================================
+   SIGNALER
+   ============================================================ */
+function ajouterIdRow(type){
+  const wrap = document.getElementById('idRows');
+  const div = document.createElement('div');
+  div.className='idrow';
+  const opts = Object.entries(ID_TYPES).map(([k,v])=>`<option value="${k}" ${k===type?'selected':''}>${v.icon} ${v.label}</option>`).join('');
+  div.innerHTML = `<select>${opts}</select>
+    <input placeholder="Numéro ou @pseudo" autocomplete="off">
+    <button class="rm" onclick="this.parentNode.remove()">×</button>`;
+  wrap.appendChild(div);
+}
+
+async function soumettreSignalement(){
+  const msg = document.getElementById('reportMsg');
+  if (!sb){ toast('Base non configurée'); return; }
+  const {data:ud} = await sb.auth.getUser();
+  if (!ud?.user){ toast('Connecte-toi d\'abord'); return; }
+
+  // Collecte des identifiants
+  const rows = [...document.querySelectorAll('#idRows .idrow')];
+  const ids = [];
+  rows.forEach(r=>{
+    const type = r.querySelector('select').value;
+    const label = r.querySelector('input').value.trim();
+    if (label) ids.push({type, label, value:normalize(type,label)});
+  });
+  if (!ids.length){ toast('Ajoute au moins 1 identifiant'); return; }
+
+  msg.textContent = 'Publication...';
+  const {data:rep, error:e1} = await sb.from('reports').insert({
+    reporter_email: ud.user.email,
+    scam_type: document.getElementById('rType').value,
+    amount_fcfa: parseInt(document.getElementById('rAmount').value)||null,
+    city: document.getElementById('rCity').value.trim()||null,
+    description: document.getElementById('rDesc').value.trim()||null
+  }).select().single();
+  if (e1){ msg.textContent='Erreur : '+e1.message; return; }
+
+  const payload = ids.map(i=>({report_id:rep.id, id_type:i.type, id_value:i.value, id_label:i.label}));
+  const {error:e2} = await sb.from('report_identifiers').insert(payload);
+  if (e2){ msg.textContent='Erreur identifiants : '+e2.message; return; }
+
+  msg.textContent = '✅ Signalement publié. Merci de protéger la communauté !';
+  toast('Signalement publié 🚩');
+  // Reset
+  document.getElementById('idRows').innerHTML=''; ajouterIdRow('wave');
+  document.getElementById('rAmount').value=''; document.getElementById('rCity').value=''; document.getElementById('rDesc').value='';
+  chargerStats();
+}
+
+/* ============================================================
+   ALERTES TEMPS RÉEL
+   ============================================================ */
+function ecouterAlertes(){
+  if (!sb) return;
+  sb.channel('alertes-pegazus')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'report_identifiers'}, payload=>{
+      const r = payload.new;
+      const b = document.getElementById('liveBanner');
+      b.style.display='flex';
+      b.innerHTML = `🔴 <div><b>Nouvelle alerte !</b> Un compte vient d'être signalé : <b>${(r.id_label||'').substring(0,30)}</b> (${ID_TYPES[r.id_type]?.label||r.id_type})</div>`;
+      b.classList.remove('live'); void b.offsetWidth; b.classList.add('live');
+      chargerStats();
+      if (document.getElementById('tab-liste').classList.contains('on')) chargerListe();
+    })
+    .subscribe();
+}
+
+/* ============================================================
+   DÉTECTEUR DE RISQUE (quiz) + CATALOGUE
+   ============================================================ */
+const QUIZ = [
+  {q:"On te demande ton code secret ou un code OTP reçu par SMS ?", p:40},
+  {q:"On te promet un gain rapide, un cadeau ou de doubler ton argent ?", p:25},
+  {q:"Tu dois payer des « frais » pour recevoir de l'argent ou un colis ?", p:25},
+  {q:"On te met la pression pour payer ou répondre très vite ?", p:20},
+  {q:"Le vendeur refuse le paiement à la livraison et exige d'avance ?", p:15},
+  {q:"Le contact a été initié par un inconnu (DM, WhatsApp) ?", p:10},
+  {q:"Le numéro ou le compte est récent / sans historique vérifiable ?", p:10}
+];
+const answers = {};
+function renderQuiz(){
+  document.getElementById('quizBox').innerHTML = QUIZ.map((item,i)=>`
+    <div class="quiz-q"><div>${i+1}. ${item.q}</div>
+      <div class="opts">
+        <button id="q${i}y" onclick="rep(${i},true)">Oui</button>
+        <button id="q${i}n" onclick="rep(${i},false)">Non</button>
+      </div></div>`).join('');
+}
+function rep(i,val){
+  answers[i]=val;
+  document.getElementById('q'+i+'y').className = val?'selY':'';
+  document.getElementById('q'+i+'n').className = !val?'selN':'';
+}
+function calculerRisque(){
+  let score=0, otp=false;
+  QUIZ.forEach((item,i)=>{ if(answers[i]){ score+=item.p; if(i===0) otp=true; } });
+  let cls,titre,txt;
+  if (otp || score>=50){ cls='bad'; titre='🔴 DANGER — Très probablement une arnaque';
+    txt='Ne paie rien, ne donne aucun code. Bloque le contact et signale-le sur Pegazus.'; }
+  else if (score>=25){ cls='warn'; titre='⚠️ Suspect — Méfie-toi';
+    txt='Plusieurs signaux d\'alerte. Vérifie l\'identité, exige le paiement à la livraison, ne te presse pas.'; }
+  else { cls='safe'; titre='✅ Peu de signaux d\'alerte';
+    txt='Reste quand même prudent : vérifie le numéro/pseudo dans l\'onglet Vérifier avant de payer.'; }
+  document.getElementById('quizResult').innerHTML =
+    `<div class="verdict ${cls}"><h2 style="margin:0">${titre}</h2><p style="margin:8px 0 0">${txt}</p></div>`;
+}
+
+const CATALOGUE = [
+  {t:"🌊 Faux agent Wave / Orange Money",d:"« Votre compte va être bloqué, donnez le code reçu par SMS. » Un vrai agent ne demande JAMAIS ton code. Raccroche et compose toi-même le service client officiel."},
+  {t:"🛒 Faux vendeur (Facebook/TikTok)",d:"Prix trop bas, exige le paiement d'avance par Mobile Money, puis disparaît. Exige le paiement à la livraison ou un lieu de rencontre public."},
+  {t:"💼 Faux recrutement",d:"« Emploi bien payé, mais payez d'abord les frais de dossier/formation. » Aucun vrai employeur ne te fait payer pour travailler."},
+  {t:"📈 Faux investissement / forex",d:"« Investis 50 000, reçois 200 000 en 3 jours. » Les rendements garantis et rapides n'existent pas. C'est une pyramide."},
+  {t:"📦 Faux colis bloqué",d:"« Votre colis est à la douane, payez des frais pour le libérer. » Vérifie directement auprès du transporteur officiel."},
+  {t:"🔒 Sextorsion",d:"On t'incite à envoyer des photos intimes, puis on te fait chanter. Ne paie pas (ça ne s'arrête jamais), coupe le contact, signale à la PLCC."},
+  {t:"🔗 Lien piégé (phishing)",d:"Un lien imite ta banque/Wave et vole tes identifiants. Ne clique pas ; tape toujours l'adresse officielle toi-même."},
+  {t:"🔮 Faux marabout / voyance",d:"Promesses de richesse ou de retour affectif contre paiement. Pure escroquerie émotionnelle."}
+];
+function renderCatalogue(){
+  document.getElementById('catalogue').innerHTML = CATALOGUE.map(c=>`
+    <details class="acc"><summary>${c.t}<span>+</span></summary>
+      <div class="body">${c.d}</div></details>`).join('');
+}
+
+/* ============================================================
+   DÉMARRAGE
+   ============================================================ */
+document.getElementById('vInput').addEventListener('keydown',e=>{ if(e.key==='Enter') verifier(); });
+ajouterIdRow('wave');
+renderQuiz();
+renderCatalogue();
+if (sb){
+  refreshAuth();
+  sb.auth.onAuthStateChange(()=>refreshAuth());
+  chargerStats();
+  ecouterAlertes();
+}
+</script>
+</body>
+</html>
